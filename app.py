@@ -118,11 +118,34 @@ def record():
         audio_url = url_extractor(audio_path)
         music_text = transcriber(audio_url)
         
+        print(f"Transcription: {music_text}")
+        
         # Get Spotify access token
         access_token = get_access_token(client_id, client_secret)
         
-        # Search for tracks
-        tracks = search_track(music_text, access_token, limit=3, return_results=True)
+        if not access_token:
+            print("Failed to get Spotify access token")
+            return jsonify({
+                'message': 'Audio recorded and processed, but Spotify search failed',
+                'music_text': music_text,
+                'tracks': [],
+                'error': 'Failed to get Spotify access token',
+                'type': 'spotify_results'
+            })
+        
+        # Search for tracks - making sure it returns results instead of just printing them
+        try:
+            tracks = search_track(music_text, access_token, limit=3, return_results=True)
+            
+            # If tracks is None or not a list, handle it gracefully
+            if not tracks or not isinstance(tracks, list):
+                print("No tracks returned from search_track function")
+                tracks = []
+        except Exception as e:
+            print(f"Error during Spotify search: {e}")
+            tracks = []
+        
+        print(f"Found {len(tracks)} tracks")
         
         # Return results
         return jsonify({
@@ -133,6 +156,9 @@ def record():
         })
         
     except Exception as e:
+        import traceback
+        print(f"Error in /record endpoint: {e}")
+        print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 @app.route('/results/<filename>')
