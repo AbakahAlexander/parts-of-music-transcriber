@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MP3 to SATB Parts Converter</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Include Verovio toolkit for music notation rendering -->
+    <script src="https://www.verovio.org/javascript/latest/verovio-toolkit.js"></script>
+</head>
+<body>
+    <header>
+        <h1>MP3 to SATB Parts Converter</h1>
+    </header>
+
+    <main>
+        <div class="container">
+            <div class="upload-section">
+                <h2>Upload MP3 File</h2>
+                <p>Upload an MP3 file to generate and play SATB (Soprano, Alto, Tenor, Bass) parts.</p>
+                
+                <form id="upload-form">
+                    <div class="file-upload">
+                        <input type="file" id="music-file" name="file" accept="audio/mp3">
+                        <label for="music-file">Choose MP3 file</label>
+                    </div>
+                    
+                    <button type="submit" id="upload-btn">Generate SATB Parts</button>
+                </form>
+                
+                <div id="progress-container" class="hidden">
+                    <div id="progress-bar"></div>
+                    <p id="progress-status">Processing...</p>
+                </div>
+            </div>
+
+            <div class="results-section hidden" id="results-section">
+                <h2>SATB Parts</h2>
+                
+                <div class="tab-container">
+                    <div class="tabs">
+                        <button class="tab-button active" data-part="score">Full Score</button>
+                        <button class="tab-button" data-part="soprano">Soprano</button>
+                        <button class="tab-button" data-part="alto">Alto</button>
+                        <button class="tab-button" data-part="tenor">Tenor</button>
+                        <button class="tab-button" data-part="bass">Bass</button>
+                    </div>
+                    
+                    <div class="tab-content">
+                        <div class="notation-container" id="notation-view"></div>
+                        
+                        <div class="controls">
+                            <button id="play-btn" class="control-btn">
+                                <span class="icon">▶</span> Play
+                            </button>
+                            <button id="stop-btn" class="control-btn">
+                                <span class="icon">■</span> Stop
+                            </button>
+                            <button id="download-btn" class="control-btn">
+                                <span class="icon">↓</span> Download MP3
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>MP3 to SATB Parts Converter &copy; 2023</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

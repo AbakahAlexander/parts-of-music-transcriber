@@ -1,0 +1,10 @@
+numpy
+sounddevice
+flask
+werkzeug
+requests
+librosa
+music21
+soundfile
+fluidsynth
+pyfluidsynth
