@@ -16,21 +16,21 @@
     </scaling>
   </defaults>
   <part-list>
-    <score-part id="Pe7cac39318b1cdbe69cfc8920ba60352">
+    <score-part id="Pb53fa09601a5610174b4ab2beb519978">
       <part-name>Soprano</part-name>
       <part-abbreviation>S</part-abbreviation>
-      <score-instrument id="I50ab6b6ad6bcd71d95cf3d448cff2eb1">
+      <score-instrument id="I9d59265798e19e37de3b94882dde6048">
         <instrument-name>Soprano</instrument-name>
         <instrument-abbreviation>S</instrument-abbreviation>
       </score-instrument>
-      <midi-instrument id="I50ab6b6ad6bcd71d95cf3d448cff2eb1">
+      <midi-instrument id="I9d59265798e19e37de3b94882dde6048">
         <midi-channel>1</midi-channel>
         <midi-program>54</midi-program>
       </midi-instrument>
     </score-part>
   </part-list>
   <!--=========================== Part 1 ===========================-->
-  <part id="Pe7cac39318b1cdbe69cfc8920ba60352">
+  <part id="Pb53fa09601a5610174b4ab2beb519978">
     <!--========================= Measure 1 ==========================-->
     <measure implicit="no" number="1">
       <attributes>

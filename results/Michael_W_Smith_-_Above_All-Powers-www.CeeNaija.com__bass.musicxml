@@ -16,21 +16,21 @@
     </scaling>
   </defaults>
   <part-list>
-    <score-part id="P085ca096185bc2072831086edd430ebc">
+    <score-part id="Pe92f52b002d9aa910d20ec693e8f7e44">
       <part-name>Bass</part-name>
       <part-abbreviation>B</part-abbreviation>
-      <score-instrument id="I3e33d1f485e0065d055e98d48cb49b2b">
+      <score-instrument id="Ic961d589b5064ec7e1b1f1dfbc93449f">
         <instrument-name>Bass</instrument-name>
         <instrument-abbreviation>B</instrument-abbreviation>
       </score-instrument>
-      <midi-instrument id="I3e33d1f485e0065d055e98d48cb49b2b">
+      <midi-instrument id="Ic961d589b5064ec7e1b1f1dfbc93449f">
         <midi-channel>1</midi-channel>
         <midi-program>54</midi-program>
       </midi-instrument>
     </score-part>
   </part-list>
   <!--=========================== Part 1 ===========================-->
-  <part id="P085ca096185bc2072831086edd430ebc">
+  <part id="Pe92f52b002d9aa910d20ec693e8f7e44">
     <!--========================= Measure 1 ==========================-->
     <measure implicit="no" number="1">
       <attributes>

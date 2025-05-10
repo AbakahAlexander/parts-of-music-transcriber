@@ -4,38 +4,46 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MP3 to SATB Parts Converter</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <!-- Include Verovio toolkit for music notation rendering -->
     <script src="https://www.verovio.org/javascript/latest/verovio-toolkit.js"></script>
 </head>
 <body>
     <header>
-        <h1>MP3 to SATB Parts Converter</h1>
+        <div class="container">
+            <h1>MP3 to SATB Parts Converter</h1>
+        </div>
     </header>
 
     <main>
         <div class="container">
             <div class="upload-section">
                 <h2>Upload MP3 File</h2>
-                <p>Upload an MP3 file to generate and play SATB (Soprano, Alto, Tenor, Bass) parts.</p>
+                <p>Convert your music recording into separate SATB voice parts that you can play and download.</p>
                 
                 <form id="upload-form">
                     <div class="file-upload">
                         <input type="file" id="music-file" name="file" accept="audio/mp3">
-                        <label for="music-file">Choose MP3 file</label>
+                        <label for="music-file">
+                            <span class="icon">📁</span> Choose MP3 file
+                        </label>
                     </div>
                     
-                    <button type="submit" id="upload-btn">Generate SATB Parts</button>
+                    <button type="submit" id="upload-btn">
+                        <span class="icon">🎵</span> Generate SATB Parts
+                    </button>
                 </form>
                 
                 <div id="progress-container" class="hidden">
                     <div id="progress-bar"></div>
-                    <p id="progress-status">Processing...</p>
+                    <p id="progress-status">Processing your audio file...</p>
                 </div>
             </div>
 
             <div class="results-section hidden" id="results-section">
                 <h2>SATB Parts</h2>
+                <p>Select a voice part below to view and play:</p>
                 
                 <div class="tab-container">
                     <div class="tabs">
@@ -47,7 +55,10 @@
                     </div>
                     
                     <div class="tab-content">
-                        <div class="notation-container" id="notation-view"></div>
+                        <div class="notation-container" id="notation-view">
+                            <div class="loading"></div>
+                            <p>Loading music notation...</p>
+                        </div>
                         
                         <div class="controls">
                             <button id="play-btn" class="control-btn">
@@ -67,7 +78,9 @@
     </main>
 
     <footer>
-        <p>MP3 to SATB Parts Converter &copy; 2023</p>
+        <div class="container">
+            <p>MP3 to SATB Parts Converter &copy; 2023 | Process, play and download SATB music parts from MP3 recordings</p>
+        </div>
     </footer>
 
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>

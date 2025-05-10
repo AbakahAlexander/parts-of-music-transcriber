@@ -16,21 +16,21 @@
     </scaling>
   </defaults>
   <part-list>
-    <score-part id="P5e0518c8a2a9c68b1a08d203c7f643c0">
+    <score-part id="P1876c0c2897a45124d20088acc1ff61b">
       <part-name>Alto</part-name>
       <part-abbreviation>A</part-abbreviation>
-      <score-instrument id="I66c77b8588a7b7c467681070477c3d5b">
+      <score-instrument id="If62bd35e86dac4a19325ecd589940d0a">
         <instrument-name>Alto</instrument-name>
         <instrument-abbreviation>A</instrument-abbreviation>
       </score-instrument>
-      <midi-instrument id="I66c77b8588a7b7c467681070477c3d5b">
+      <midi-instrument id="If62bd35e86dac4a19325ecd589940d0a">
         <midi-channel>1</midi-channel>
         <midi-program>54</midi-program>
       </midi-instrument>
     </score-part>
   </part-list>
   <!--=========================== Part 1 ===========================-->
-  <part id="P5e0518c8a2a9c68b1a08d203c7f643c0">
+  <part id="P1876c0c2897a45124d20088acc1ff61b">
     <!--========================= Measure 1 ==========================-->
     <measure implicit="no" number="1">
       <attributes>

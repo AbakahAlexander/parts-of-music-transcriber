@@ -16,21 +16,21 @@
     </scaling>
   </defaults>
   <part-list>
-    <score-part id="Pf2e978614b12ed8edaebe1eb7aaf1c17">
+    <score-part id="P89b8b7965d328f8797a15979a6acfce0">
       <part-name>Tenor</part-name>
       <part-abbreviation>T</part-abbreviation>
-      <score-instrument id="If83f4ed78e325c67af2e7818521205e0">
+      <score-instrument id="I415756353b263df3073b9b3f4925c8f6">
         <instrument-name>Tenor</instrument-name>
         <instrument-abbreviation>T</instrument-abbreviation>
       </score-instrument>
-      <midi-instrument id="If83f4ed78e325c67af2e7818521205e0">
+      <midi-instrument id="I415756353b263df3073b9b3f4925c8f6">
         <midi-channel>1</midi-channel>
         <midi-program>54</midi-program>
       </midi-instrument>
     </score-part>
   </part-list>
   <!--=========================== Part 1 ===========================-->
-  <part id="Pf2e978614b12ed8edaebe1eb7aaf1c17">
+  <part id="P89b8b7965d328f8797a15979a6acfce0">
     <!--========================= Measure 1 ==========================-->
     <measure implicit="no" number="1">
       <attributes>

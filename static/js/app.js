@@ -37,16 +37,21 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Display file name when selected
     musicFileInput.addEventListener('change', () => {
-        const fileName = musicFileInput.files[0]?.name || 'No file chosen';
-        const fileLabel = musicFileInput.nextElementSibling;
-        fileLabel.textContent = fileName;
-        
-        // Validate file is MP3
         const file = musicFileInput.files[0];
-        if (file && !file.name.toLowerCase().endsWith('.mp3')) {
-            alert('Please select an MP3 file');
-            musicFileInput.value = '';
-            fileLabel.textContent = 'Choose MP3 file';
+        const fileLabel = musicFileInput.nextElementSibling;
+        
+        if (file) {
+            // Validate file is MP3
+            if (!file.name.toLowerCase().endsWith('.mp3')) {
+                showNotification('Only MP3 files are supported', 'error');
+                musicFileInput.value = '';
+                fileLabel.innerHTML = '<span class="icon">📁</span> Choose MP3 file';
+                return;
+            }
+            
+            fileLabel.innerHTML = `<span class="icon">🎵</span> ${file.name}`;
+        } else {
+            fileLabel.innerHTML = '<span class="icon">📁</span> Choose MP3 file';
         }
     });
     
@@ -56,19 +61,19 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const file = musicFileInput.files[0];
         if (!file) {
-            alert('Please select an MP3 file to upload');
+            showNotification('Please select an MP3 file', 'error');
             return;
         }
         
         if (!file.name.toLowerCase().endsWith('.mp3')) {
-            alert('Only MP3 files are supported');
+            showNotification('Only MP3 files are supported', 'error');
             return;
         }
         
         // Show progress
         uploadBtn.disabled = true;
         progressContainer.classList.remove('hidden');
-        progressStatus.textContent = 'Processing...';
+        progressStatus.textContent = 'Processing your audio file...';
         
         const formData = new FormData();
         formData.append('file', file);
@@ -88,14 +93,21 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Update UI
             progressStatus.textContent = 'Processing complete!';
-            resultsSection.classList.remove('hidden');
-            
-            // Load the score
-            switchTab('score');
+            setTimeout(() => {
+                progressContainer.classList.add('hidden');
+                resultsSection.classList.remove('hidden');
+                
+                // Smoothly scroll to results
+                resultsSection.scrollIntoView({ behavior: 'smooth' });
+                
+                // Load the score
+                switchTab('score');
+            }, 1000);
             
         } catch (error) {
             progressStatus.textContent = `Error: ${error.message}`;
             console.error('Upload error:', error);
+            showNotification(`Error: ${error.message}`, 'error');
         } finally {
             uploadBtn.disabled = false;
         }
@@ -115,6 +127,12 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Stop any current playback
         stopPlayback();
+        
+        // Show loading state
+        notationView.innerHTML = `
+            <div class="loading"></div>
+            <p>Loading ${part} notation...</p>
+        `;
         
         // Load the notation
         loadNotation(part);
@@ -138,8 +156,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 .then(xml => {
                     if (verovioToolkit) {
                         verovioToolkit.loadData(xml);
-                        const svg = verovioToolkit.renderToSVG(1, {});
+                        
+                        // Configure rendering options
+                        const options = {
+                            adjustPageHeight: true,
+                            scale: 40,
+                            pageMarginTop: 50,
+                            pageMarginLeft: 50,
+                            pageMarginRight: 50,
+                            pageMarginBottom: 50,
+                            footer: 'none',
+                            justifyVertically: false
+                        };
+                        
+                        const svg = verovioToolkit.renderToSVG(1, options);
                         notationView.innerHTML = svg;
+                        
+                        // Make SVG responsive
+                        const svgElement = notationView.querySelector('svg');
+                        if (svgElement) {
+                            svgElement.setAttribute('width', '100%');
+                            svgElement.setAttribute('height', 'auto');
+                            svgElement.style.maxWidth = '100%';
+                        }
                     } else {
                         notationView.innerHTML = '<p>Music notation viewer not available.</p>';
                     }
@@ -149,7 +188,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     notationView.innerHTML = `<p>Error loading notation: ${error.message}</p>`;
                 });
         } else {
-            notationView.innerHTML = `<p>File format not supported for display: ${filePath}</p>`;
+            notationView.innerHTML = `
+                <p>File format not supported for display: ${filePath.split('/').pop()}</p>
+                <p>Click Play to listen to this part.</p>
+            `;
         }
     }
     
@@ -159,9 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!resultFiles || !resultFiles[audioKey]) {
             // Try to use MIDI file instead
             if (resultFiles[`${part}_midi`]) {
-                notationView.insertAdjacentHTML('afterend', 
-                    `<p class="note">Audio conversion not available. Using MIDI playback which may not work in all browsers.</p>`
-                );
+                insertNotification('Audio conversion not available. Using MIDI playback which may not work in all browsers.', 'warning');
                 return;
             }
             return;
@@ -188,7 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function playCurrentPart() {
         if (!audioPlayer) {
-            alert('No audio available for this part');
+            showNotification('No audio available for this part', 'warning');
             return;
         }
         
@@ -202,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
                 .catch(error => {
                     console.error('Error playing audio:', error);
-                    alert(`Error playing audio: ${error.message}`);
+                    showNotification(`Error playing audio: ${error.message}`, 'error');
                 });
         }
         
@@ -237,12 +277,14 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
+            
+            showNotification(`Downloading ${currentPart} audio...`, 'success');
             return;
         }
         
         // Fall back to MusicXML if audio not available
         if (!resultFiles || !resultFiles[currentPart]) {
-            alert('No file available for this part.');
+            showNotification('No file available for this part.', 'error');
             return;
         }
         
@@ -256,5 +298,68 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
+        
+        showNotification(`Downloading ${currentPart} file...`, 'success');
+    }
+    
+    function showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        
+        // Style based on type
+        switch(type) {
+            case 'error':
+                notification.style.backgroundColor = '#f44336';
+                break;
+            case 'success':
+                notification.style.backgroundColor = '#4caf50';
+                break;
+            case 'warning':
+                notification.style.backgroundColor = '#ff9800';
+                break;
+            default:
+                notification.style.backgroundColor = '#2196f3';
+        }
+        
+        // Apply common styles
+        Object.assign(notification.style, {
+            color: 'white',
+            padding: '12px 16px',
+            position: 'fixed',
+            bottom: '20px',
+            right: '20px',
+            zIndex: '1000',
+            borderRadius: '4px',
+            boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+            opacity: '0',
+            transition: 'opacity 0.3s ease-in-out',
+        });
+        
+        // Add to DOM and animate in
+        document.body.appendChild(notification);
+        setTimeout(() => notification.style.opacity = '1', 10);
+        
+        // Remove after 4 seconds
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            setTimeout(() => notification.remove(), 300);
+        }, 4000);
+    }
+    
+    function insertNotification(message, type = 'info') {
+        // Remove any existing notification
+        const existingNote = notationView.querySelector('.note');
+        if (existingNote) {
+            existingNote.remove();
+        }
+        
+        // Create and insert notification
+        const note = document.createElement('p');
+        note.className = 'note';
+        note.textContent = message;
+        
+        notationView.insertAdjacentElement('afterend', note);
     }
 });
