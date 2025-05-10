@@ -1,5 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Elements
+    // Elements for mode selection
+    const modeTabs = document.querySelectorAll('.mode-tab');
+    const uploadMode = document.getElementById('upload-mode');
+    const recordMode = document.getElementById('record-mode');
+    
+    // Elements for upload mode
     const uploadForm = document.getElementById('upload-form');
     const musicFileInput = document.getElementById('music-file');
     const uploadBtn = document.getElementById('upload-btn');
@@ -12,12 +17,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const downloadBtn = document.getElementById('download-btn');
     const tabButtons = document.querySelectorAll('.tab-button');
     
+    // Elements for record mode
+    const recordDuration = document.getElementById('record-duration');
+    const startRecordBtn = document.getElementById('start-record-btn');
+    const recordingProgress = document.getElementById('recording-progress');
+    const recordingStatus = document.getElementById('recording-status');
+    const recordingTimer = document.getElementById('recording-timer');
+    const spotifyResults = document.getElementById('spotify-results');
+    const transcriptionText = document.getElementById('transcription-text');
+    const tracksTbody = document.getElementById('tracks-tbody');
+    
     // State
     let currentPart = 'score';
     let resultFiles = {};
     let verovioToolkit = null;
     let audioPlayer = null;
     let isPlaying = false;
+    let isRecording = false;
+    let recordingInterval = null;
     
     // Initialize Verovio toolkit
     try {
@@ -26,7 +43,27 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Error initializing Verovio toolkit:', e);
     }
     
-    // Event listeners
+    // Mode selection
+    modeTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const mode = tab.dataset.mode;
+            
+            // Update active tab
+            modeTabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            
+            // Show selected mode
+            if (mode === 'upload') {
+                uploadMode.classList.remove('hidden');
+                recordMode.classList.add('hidden');
+            } else {
+                uploadMode.classList.add('hidden');
+                recordMode.classList.remove('hidden');
+            }
+        });
+    });
+    
+    // Event listeners for upload mode
     uploadForm.addEventListener('submit', handleFileUpload);
     tabButtons.forEach(button => {
         button.addEventListener('click', () => switchTab(button.dataset.part));
@@ -34,6 +71,9 @@ document.addEventListener('DOMContentLoaded', () => {
     playBtn.addEventListener('click', playCurrentPart);
     stopBtn.addEventListener('click', stopPlayback);
     downloadBtn.addEventListener('click', downloadCurrentPart);
+    
+    // Event listeners for record mode
+    startRecordBtn.addEventListener('click', startRecording);
     
     // Display file name when selected
     musicFileInput.addEventListener('change', () => {
@@ -55,7 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // Functions
+    // Functions for upload mode
     async function handleFileUpload(e) {
         e.preventDefault();
         
@@ -302,6 +342,121 @@ document.addEventListener('DOMContentLoaded', () => {
         showNotification(`Downloading ${currentPart} file...`, 'success');
     }
     
+    // Functions for record mode
+    async function startRecording() {
+        if (isRecording) {
+            return;
+        }
+        
+        // Get recording duration
+        const duration = parseInt(recordDuration.value) || 5;
+        if (duration < 1 || duration > 30) {
+            showNotification('Please enter a duration between 1 and 30 seconds', 'warning');
+            return;
+        }
+        
+        // Update UI
+        isRecording = true;
+        startRecordBtn.disabled = true;
+        recordingProgress.classList.remove('hidden');
+        recordingStatus.textContent = 'Recording in progress...';
+        spotifyResults.classList.add('hidden');
+        
+        // Start countdown timer
+        let secondsLeft = duration;
+        recordingTimer.textContent = secondsLeft;
+        
+        recordingInterval = setInterval(() => {
+            secondsLeft--;
+            recordingTimer.textContent = secondsLeft;
+            
+            if (secondsLeft <= 0) {
+                clearInterval(recordingInterval);
+                recordingInterval = null;
+            }
+        }, 1000);
+        
+        try {
+            // Send request to start recording
+            const response = await fetch('/record', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ duration }),
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            // Update UI based on response
+            recordingStatus.textContent = 'Processing complete!';
+            setTimeout(() => {
+                recordingProgress.classList.add('hidden');
+                spotifyResults.classList.remove('hidden');
+                
+                // Populate transcription
+                transcriptionText.textContent = data.music_text || 'No transcription available';
+                
+                // Populate track results
+                populateTrackResults(data.tracks);
+                
+                // Smoothly scroll to results
+                spotifyResults.scrollIntoView({ behavior: 'smooth' });
+            }, 1000);
+            
+        } catch (error) {
+            recordingStatus.textContent = `Error: ${error.message}`;
+            console.error('Recording error:', error);
+            showNotification(`Error: ${error.message}`, 'error');
+        } finally {
+            // Reset recording state
+            isRecording = false;
+            startRecordBtn.disabled = false;
+            if (recordingInterval) {
+                clearInterval(recordingInterval);
+                recordingInterval = null;
+            }
+        }
+    }
+    
+    function populateTrackResults(tracks) {
+        // Clear existing results
+        tracksTbody.innerHTML = '';
+        
+        if (!tracks || !Array.isArray(tracks) || tracks.length === 0) {
+            const row = document.createElement('tr');
+            row.innerHTML = `<td colspan="3" class="no-results">No matching tracks found</td>`;
+            tracksTbody.appendChild(row);
+            return;
+        }
+        
+        // Add each track to the table
+        tracks.forEach(track => {
+            const row = document.createElement('tr');
+            
+            // Get artists as comma-separated string
+            const artists = track.artists.map(artist => artist.name).join(', ');
+            
+            // Create row content
+            row.innerHTML = `
+                <td class="track-name">${track.name}</td>
+                <td class="track-artists">${artists}</td>
+                <td class="track-actions">
+                    <a href="${track.external_urls?.spotify}" target="_blank" class="spotify-link">
+                        <span class="icon">🎧</span> Listen on Spotify
+                    </a>
+                </td>
+            `;
+            
+            tracksTbody.appendChild(row);
+        });
+    }
+    
+    // Utility functions
     function showNotification(message, type = 'info') {
         // Create notification element
         const notification = document.createElement('div');

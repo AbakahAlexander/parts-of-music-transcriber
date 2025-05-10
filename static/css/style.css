@@ -405,3 +405,265 @@ footer {
         transform: rotate(360deg);
     }
 }
+
+/* Mode Tabs */
+.mode-tabs {
+    display: flex;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--light-gray);
+    gap: 0.5rem;
+}
+
+.mode-tab {
+    padding: 1rem 2rem;
+    background-color: transparent;
+    color: var(--gray-color);
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: none;
+}
+
+.mode-tab:hover {
+    color: var(--primary-color);
+}
+
+.mode-tab.active {
+    color: var(--primary-color);
+    border-bottom: 3px solid var(--primary-color);
+    font-weight: 500;
+}
+
+.mode-content {
+    animation: fadeIn 0.5s ease;
+}
+
+/* Record Mode */
+.record-section {
+    background-color: white;
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    box-shadow: var(--shadow);
+    margin-bottom: 2rem;
+    transition: var(--transition);
+}
+
+.record-section:hover {
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.record-controls {
+    margin-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.duration-control {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.duration-control label {
+    font-weight: 500;
+}
+
+.duration-control input {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--light-gray);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    width: 5rem;
+    text-align: center;
+}
+
+.record-btn {
+    background-color: var(--accent-color);
+    max-width: 300px;
+}
+
+.record-btn:hover {
+    background-color: #d91a70;
+}
+
+/* Recording Progress */
+#recording-progress {
+    margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: fadeIn 0.5s ease;
+}
+
+#recording-indicator {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: var(--accent-color);
+    animation: pulse 1s infinite;
+    margin-bottom: 1rem;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(247, 37, 133, 0.7);
+    }
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 15px rgba(247, 37, 133, 0);
+    }
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(247, 37, 133, 0);
+    }
+}
+
+#recording-status {
+    font-weight: 500;
+    color: var(--dark-color);
+    margin-bottom: 0.5rem;
+}
+
+#recording-timer {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--accent-color);
+}
+
+/* Spotify Results */
+.spotify-results {
+    background-color: white;
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    box-shadow: var(--shadow);
+    animation: fadeIn 0.5s ease;
+}
+
+.transcription-box {
+    background-color: #f5f7fa;
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border-left: 4px solid var(--primary-color);
+}
+
+.transcription-box h3 {
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+    color: var(--primary-color);
+}
+
+.transcription-box p {
+    font-style: italic;
+    color: var(--dark-color);
+}
+
+.track-results {
+    margin-top: 2rem;
+}
+
+.tracks-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.tracks-table th {
+    text-align: left;
+    padding: 1rem;
+    background-color: var(--light-gray);
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.tracks-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--light-gray);
+}
+
+.track-name {
+    font-weight: 500;
+    color: var(--dark-color);
+}
+
+.track-artists {
+    color: var(--gray-color);
+}
+
+.track-actions {
+    text-align: center;
+}
+
+.spotify-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #1DB954; /* Spotify green */
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius);
+    font-size: 0.9rem;
+    transition: var (--transition);
+}
+
+.spotify-link:hover {
+    background-color: #1aa34a;
+    transform: translateY(-2px);
+}
+
+.no-results {
+    text-align: center;
+    padding: 2rem;
+    color: var(--gray-color);
+    font-style: italic;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .duration-control {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .mode-tab {
+        flex: 1;
+        padding: 1rem 0.5rem;
+        font-size: 1rem;
+    }
+    
+    .tracks-table thead {
+        display: none;
+    }
+    
+    .tracks-table tr {
+        display: block;
+        margin-bottom: 1rem;
+        border: 1px solid var(--light-gray);
+        border-radius: var(--border-radius);
+    }
+    
+    .tracks-table td {
+        display: block;
+        text-align: right;
+        padding: 0.75rem;
+        position: relative;
+        border-bottom: 1px solid var(--light-gray);
+    }
+    
+    .tracks-table td:last-child {
+        border-bottom: none;
+    }
+    
+    .tracks-table td:before {
+        content: attr(data-label);
+        position: absolute;
+        left: 0.75rem;
+        width: 45%;
+        text-align: left;
+        font-weight: 500;
+    }
+}

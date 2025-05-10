@@ -5,6 +5,13 @@ from werkzeug.utils import secure_filename
 from SATB_generator import generate_satb_parts
 from audio_converter import convert_musicxml_to_audio
 
+# Import functions used in main.py
+from get_acces_token import get_access_token
+from audio_recorder import record_audio
+from url_extractor import url_extractor
+from transciber import transcriber
+from spotify_query import search_track
+
 app = Flask(__name__, 
     static_folder='static',
     template_folder='templates')
@@ -12,16 +19,23 @@ app = Flask(__name__,
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results')
 AUDIO_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'audio')
+RECORDINGS_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'recordings')
 
 # Create directories if they don't exist
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULTS_FOLDER, exist_ok=True)
 os.makedirs(AUDIO_FOLDER, exist_ok=True)
+os.makedirs(RECORDINGS_FOLDER, exist_ok=True)
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['RESULTS_FOLDER'] = RESULTS_FOLDER
 app.config['AUDIO_FOLDER'] = AUDIO_FOLDER
+app.config['RECORDINGS_FOLDER'] = RECORDINGS_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024  # 32 MB max upload
+
+# Get Spotify API credentials from environment variables
+client_id = os.getenv('CLIENT_ID')
+client_secret = os.getenv('CLIENT_SECRET')
 
 @app.route('/')
 def index():
@@ -77,13 +91,49 @@ def upload_file():
             return jsonify({
                 'message': 'File processed successfully',
                 'files': result_files,
-                'basename': os.path.splitext(filename)[0]
+                'basename': os.path.splitext(filename)[0],
+                'type': 'satb_parts'
             })
             
         except Exception as e:
             return jsonify({'error': str(e)}), 500
     
     return jsonify({'error': 'File processing failed'}), 500
+
+@app.route('/record', methods=['POST'])
+def record():
+    try:
+        data = request.get_json()
+        duration = data.get('duration', 5)
+        
+        # Generate a unique filename
+        import time
+        timestamp = int(time.time())
+        filename = os.path.join(app.config['RECORDINGS_FOLDER'], f"recording_{timestamp}.wav")
+        
+        # Record audio
+        audio_path = record_audio(filename, int(duration))
+        
+        # Process recorded audio - this follows the flow in main.py
+        audio_url = url_extractor(audio_path)
+        music_text = transcriber(audio_url)
+        
+        # Get Spotify access token
+        access_token = get_access_token(client_id, client_secret)
+        
+        # Search for tracks
+        tracks = search_track(music_text, access_token, limit=3, return_results=True)
+        
+        # Return results
+        return jsonify({
+            'message': 'Audio recorded and processed successfully',
+            'music_text': music_text,
+            'tracks': tracks,
+            'type': 'spotify_results'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/results/<filename>')
 def serve_results(filename):
@@ -92,6 +142,10 @@ def serve_results(filename):
 @app.route('/audio/<filename>')
 def serve_audio(filename):
     return send_file(os.path.join(app.config['AUDIO_FOLDER'], filename))
+
+@app.route('/recordings/<filename>')
+def serve_recordings(filename):
+    return send_file(os.path.join(app.config['RECORDINGS_FOLDER'], filename))
 
 if __name__ == '__main__':
     app.run(debug=True)
