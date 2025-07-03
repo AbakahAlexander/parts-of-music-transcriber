@@ -2,235 +2,221 @@ import os
 import librosa
 import numpy as np
 import soundfile as sf
-from music21 import converter, stream, note, pitch, instrument, midi
+from music21 import stream, note, instrument, scale
 
-def generate_satb_parts(mp3_file_path, output_dir=None, output_format="musicxml", export_audio=True):
-    """
-    Generate SATB (Soprano, Alto, Tenor, Bass) parts from an MP3 file.
-    
-    Args:
-        mp3_file_path (str): Path to the MP3 file
-        output_dir (str): Directory to save output files (defaults to same directory as input)
-        output_format (str): Format for output files ("musicxml", "midi", "pdf")
-        export_audio (bool): Whether to export audio files for each part
-        
-    Returns:
-        dict: Dictionary containing paths to the generated files for each part
-    """
-    if not os.path.exists(mp3_file_path):
-        raise FileNotFoundError(f"MP3 file not found: {mp3_file_path}")
-    
-    if output_dir is None:
-        output_dir = os.path.dirname(mp3_file_path)
-    os.makedirs(output_dir, exist_ok=True)
-    
-    print(f"Processing {mp3_file_path}...")
-    
-    # Load audio file
-    y, sr = librosa.load(mp3_file_path, sr=None)
-    
-    # Step 1: Source separation (separating vocals/instruments)
-    # In a complete implementation, you would use a library like Spleeter or Demucs
-    # For simplicity, we'll simulate this step
-    print("Performing source separation...")
-    
-    # Step 2: Pitch detection and transcription
-    print("Analyzing pitch content...")
-    
-    # Use librosa to detect pitches and onsets
-    onset_frames = librosa.onset.onset_detect(y=y, sr=sr)
-    onset_times = librosa.frames_to_time(onset_frames, sr=sr)
-    
-    # Harmonic-percussive source separation for better pitch analysis
-    y_harmonic = librosa.effects.harmonic(y)
-    pitches, magnitudes = librosa.piptrack(y=y_harmonic, sr=sr)
-    
-    # Step 3: Transcribe and generate parts
-    # Define vocal ranges (MIDI note numbers)
-    vocal_ranges = {
-        "soprano": (60, 83),  # C4-B5
-        "alto": (53, 76),     # F3-E5
-        "tenor": (48, 69),    # C3-A4
-        "bass": (36, 60)      # C2-C4
-    }
-    
-    # Create music21 streams for each part
-    parts = {
-        "soprano": stream.Part(id='soprano'),
-        "alto": stream.Part(id='alto'),
-        "tenor": stream.Part(id='tenor'),
-        "bass": stream.Part(id='bass')
-    }
-    
-    # Add appropriate instruments
-    parts["soprano"].append(instrument.Soprano())
-    parts["alto"].append(instrument.Alto())
-    parts["tenor"].append(instrument.Tenor())
-    parts["bass"].append(instrument.Bass())
-    
-    # In a real implementation, you would:
-    # 1. Use a more sophisticated algorithm to extract notes and assign to parts
-    # 2. Consider harmonies and music theory rules for proper voice leading
-    # 3. Handle rhythm and note durations more precisely
-    
-    # Simulate transcribing notes to each part
-    for i, onset in enumerate(onset_times):
-        # Find the strongest pitches at this onset
-        if i < len(onset_frames):
-            frame = onset_frames[i]
-            if frame < pitches.shape[1]:
-                pitch_candidates = []
-                for freq_bin in range(pitches.shape[0]):
-                    if magnitudes[freq_bin, frame] > 0.1:  # Only consider strong enough frequencies
-                        midi_pitch = int(round(librosa.hz_to_midi(pitches[freq_bin, frame])))
-                        if 36 <= midi_pitch <= 83:  # Within overall SATB range
-                            pitch_candidates.append((midi_pitch, magnitudes[freq_bin, frame]))
-                
-                # Sort by magnitude
-                pitch_candidates.sort(key=lambda x: x[1], reverse=True)
-                
-                # Take top 4 pitches (or fewer if not enough)
-                top_pitches = [p[0] for p in pitch_candidates[:4]]
-                
-                # Assign to parts based on ranges
-                assigned_pitches = {'soprano': None, 'alto': None, 'tenor': None, 'bass': None}
-                
-                # First, try to find ideal pitches for each voice
-                for midi_pitch in sorted(top_pitches, reverse=True):
-                    assigned = False
-                    for voice in ['soprano', 'alto', 'tenor', 'bass']:
-                        if assigned_pitches[voice] is None and vocal_ranges[voice][0] <= midi_pitch <= vocal_ranges[voice][1]:
-                            assigned_pitches[voice] = midi_pitch
-                            assigned = True
-                            break
-                
-                # Add notes to parts
-                for voice, midi_pitch in assigned_pitches.items():
-                    if midi_pitch is not None:
-                        n = note.Note(midi_pitch)
-                        n.quarterLength = 1.0  # For simplicity, use quarter notes
-                        parts[voice].append(n)
-                    else:
-                        # Add rest if no pitch assigned
-                        parts[voice].append(note.Rest(quarterLength=1.0))
-    
-    # Create a score with all parts
-    score = stream.Score()
-    for part_name in ['soprano', 'alto', 'tenor', 'bass']:
-        score.append(parts[part_name])
-    
-    # Export files
-    base_name = os.path.splitext(os.path.basename(mp3_file_path))[0]
-    output_files = {}
-    
-    # Always export MIDI regardless of output_format selection
-    # This ensures we have playable files
-    midi_output_path = os.path.join(output_dir, f"{base_name}_satb.mid")
-    score.write('midi', fp=midi_output_path)
-    output_files['score_midi'] = midi_output_path
-    
-    for part_name in ['soprano', 'alto', 'tenor', 'bass']:
-        part_midi_path = os.path.join(output_dir, f"{base_name}_{part_name}.mid")
-        parts[part_name].write('midi', fp=part_midi_path)
-        output_files[f"{part_name}_midi"] = part_midi_path
-    
-    # Export in requested format
-    if output_format == "musicxml":
-        output_path = os.path.join(output_dir, f"{base_name}_satb.musicxml")
-        score.write('musicxml', fp=output_path)
-        output_files['score'] = output_path
-        
-        # Export individual parts
-        for part_name in ['soprano', 'alto', 'tenor', 'bass']:
-            part_path = os.path.join(output_dir, f"{base_name}_{part_name}.musicxml")
-            parts[part_name].write('musicxml', fp=part_path)
-            output_files[part_name] = part_path
-            
-    elif output_format == "midi":
-        output_path = os.path.join(output_dir, f"{base_name}_satb.mid")
-        score.write('midi', fp=output_path)
-        output_files['score'] = output_path
-        
-        # Export individual parts
-        for part_name in ['soprano', 'alto', 'tenor', 'bass']:
-            part_path = os.path.join(output_dir, f"{base_name}_{part_name}.mid")
-            parts[part_name].write('midi', fp=part_path)
-            output_files[part_name] = part_path
-            
-    elif output_format == "pdf":
-        # Note: PDF export requires additional setup with MuseScore or LilyPond
-        output_path = os.path.join(output_dir, f"{base_name}_satb.pdf")
-        try:
-            score.write('musicxml.pdf', fp=output_path)
-            output_files['score'] = output_path
-        except:
-            print("PDF export requires additional setup with MuseScore or LilyPond.")
-    
-    # Export audio if requested
-    if export_audio:
-        try:
-            print("Attempting to render audio files...")
-            # Audio rendering requires additional libraries like FluidSynth
-            # We'll provide instructions on how to convert MIDI to audio
-            print("To render audio from MIDI files, you can use:")
-            print("1. FluidSynth: fluidsynth -F output.wav soundfont.sf2 input.mid")
-            print("2. A Digital Audio Workstation (DAW) like GarageBand, Logic, Ableton, etc.")
-            print("3. Online MIDI to MP3 converters")
-            print(f"The MIDI files are located in: {output_dir}")
-        except Exception as e:
-            print(f"Error exporting audio: {e}")
-    
-    print(f"SATB parts generated and saved to {output_dir}")
-    return output_files
+"""
+SATB Generator
+==============
+
+Turn your MP3 audio into SATB (Soprano, Alto, Tenor, Bass) sheet music with solfège syllables!
+
+Usage:
+  python3 SATB_generator.py song1.mp3 song2.mp3 --format musicxml --output-dir results --solfege movable
+  python3 SATB_generator.py song1.mp3 --format pdf --output-dir results
+
+Features:
+- Converts audio to SATB scores (MusicXML, MIDI, PDF)
+- Adds solfège syllables (fixed or movable do)
+- Detects key for movable do
+- Tries to guess note durations
+- Batch processing (multiple files)
+- Plays MIDI if you want (needs pygame)
+"""
+
+# Fixed do solfège (C major)
+NOTE_TO_SOLFEGE_FIXED = {
+    'C': 'Do', 'C#': 'Di', 'D': 'Re', 'D#': 'Ri', 'E': 'Mi', 'F': 'Fa',
+    'F#': 'Fi', 'G': 'Sol', 'G#': 'Si', 'A': 'La', 'A#': 'Li', 'B': 'Ti'
+}
+
+# Movable do (major scale degrees)
+DEGREE_TO_SOLFEGE = ['Do', 'Re', 'Mi', 'Fa', 'Sol', 'La', 'Ti']
+
+def get_solfege_movable(note_obj, tonic):
+    """Return movable do solfège for a note, given the tonic."""
+    s = scale.MajorScale(tonic)
+    try:
+        deg = s.getScaleDegreeFromPitch(note_obj)
+        if deg is not None and 1 <= deg <= 7:
+            return DEGREE_TO_SOLFEGE[deg-1]
+    except Exception:
+        pass
+    return ''
+
+def play_midi_file(midi_path):
+    """Play a MIDI file if pygame is installed."""
+    try:
+        import pygame
+        import time
+        pygame.init()
+        pygame.mixer.init()
+        pygame.mixer.music.load(midi_path)
+        pygame.mixer.music.play()
+        print(f"Playing {midi_path}...")
+        while pygame.mixer.music.get_busy():
+            time.sleep(0.5)
+        pygame.mixer.music.stop()
+        pygame.quit()
+    except ImportError:
+        print("Install pygame to play MIDI: pip install pygame")
+    except Exception as e:
+        print(f"Couldn't play MIDI: {e}")
+
+def generate_satb_parts(mp3_file_paths, output_dir=None, output_format="musicxml", export_audio=True, solfege_system='fixed', play_midi=False):
+    if isinstance(mp3_file_paths, str):
+        mp3_file_paths = [mp3_file_paths]
+    # Remove non-existent files from the list
+    mp3_file_paths = [f for f in mp3_file_paths if os.path.exists(f)]
+    if not mp3_file_paths:
+        print("No valid input files found. Exiting.")
+        return {}
+    all_outputs = {}
+    for mp3_file_path in mp3_file_paths:
+        out_dir = output_dir or os.path.dirname(mp3_file_path)
+        os.makedirs(out_dir, exist_ok=True)
+        print(f"Working on {mp3_file_path}...")
+        y, sr = librosa.load(mp3_file_path, sr=None)
+        print("Analyzing audio...")
+        onset_frames = librosa.onset.onset_detect(y=y, sr=sr)
+        onset_times = librosa.frames_to_time(onset_frames, sr=sr)
+        y_harmonic = librosa.effects.harmonic(y)
+        pitches, mags = librosa.piptrack(y=y_harmonic, sr=sr)
+        vocal_ranges = {
+            "soprano": (60, 83),
+            "alto": (53, 76),
+            "tenor": (48, 69),
+            "bass": (36, 60)
+        }
+        parts = {v: stream.Part(id=v) for v in vocal_ranges}
+        parts["soprano"].append(instrument.Soprano())
+        parts["alto"].append(instrument.Alto())
+        parts["tenor"].append(instrument.Tenor())
+        parts["bass"].append(instrument.Bass())
+        # Key for movable do
+        detected_key = 'C'
+        if solfege_system == 'movable':
+            chroma = librosa.feature.chroma_cqt(y=y, sr=sr)
+            key_index = chroma.sum(axis=1).argmax()
+            key_names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+            detected_key = key_names[key_index]
+        # Guess durations
+        if len(onset_times) > 1:
+            durations = np.diff(onset_times)
+            durations = np.append(durations, durations[-1])
+        else:
+            durations = [1.0] * len(onset_times)
+        for i, onset in enumerate(onset_times):
+            if i < len(onset_frames):
+                frame = onset_frames[i]
+                if frame < pitches.shape[1]:
+                    pitch_candidates = []
+                    for freq_bin in range(pitches.shape[0]):
+                        if mags[freq_bin, frame] > 0.1:
+                            midi_pitch = int(round(librosa.hz_to_midi(pitches[freq_bin, frame])))
+                            if 36 <= midi_pitch <= 83:
+                                pitch_candidates.append((midi_pitch, mags[freq_bin, frame]))
+                    pitch_candidates.sort(key=lambda x: x[1], reverse=True)
+                    top_pitches = [p[0] for p in pitch_candidates[:4]]
+                    assigned = {v: None for v in vocal_ranges}
+                    for midi_pitch in sorted(top_pitches, reverse=True):
+                        for v in ["soprano", "alto", "tenor", "bass"]:
+                            if assigned[v] is None and vocal_ranges[v][0] <= midi_pitch <= vocal_ranges[v][1]:
+                                assigned[v] = midi_pitch
+                                break
+                    for v, midi_pitch in assigned.items():
+                        if midi_pitch is not None:
+                            n = note.Note(midi_pitch)
+                            n.quarterLength = float(durations[i])
+                            if solfege_system == 'fixed':
+                                n.lyric = NOTE_TO_SOLFEGE_FIXED.get(n.name, '')
+                            else:
+                                n.lyric = get_solfege_movable(n, detected_key)
+                            parts[v].append(n)
+                        else:
+                            parts[v].append(note.Rest(quarterLength=float(durations[i])))
+        score = stream.Score()
+        for v in ["soprano", "alto", "tenor", "bass"]:
+            score.append(parts[v])
+        base = os.path.splitext(os.path.basename(mp3_file_path))[0]
+        output_files = {}
+        midi_path = os.path.join(out_dir, f"{base}_satb.mid")
+        score.write('midi', fp=midi_path)
+        output_files['score_midi'] = midi_path
+        for v in ["soprano", "alto", "tenor", "bass"]:
+            part_midi = os.path.join(out_dir, f"{base}_{v}.mid")
+            parts[v].write('midi', fp=part_midi)
+            output_files[f"{v}_midi"] = part_midi
+        if output_format == "musicxml":
+            xml_path = os.path.join(out_dir, f"{base}_satb.musicxml")
+            score.write('musicxml', fp=xml_path)
+            output_files['score'] = xml_path
+            for v in ["soprano", "alto", "tenor", "bass"]:
+                part_xml = os.path.join(out_dir, f"{base}_{v}.musicxml")
+                parts[v].write('musicxml', fp=part_xml)
+                output_files[v] = part_xml
+        elif output_format == "midi":
+            output_files['score'] = midi_path
+        elif output_format == "pdf":
+            pdf_path = os.path.join(out_dir, f"{base}_satb.pdf")
+            try:
+                musescore_paths = [
+                    '/Applications/MuseScore 4.app/Contents/MacOS/mscore',
+                    '/Applications/MuseScore 3.app/Contents/MacOS/mscore',
+                    '/usr/bin/mscore', '/usr/local/bin/mscore',
+                    '/usr/bin/musescore', '/usr/local/bin/musescore'
+                ]
+                musescore_exec = next((p for p in musescore_paths if os.path.exists(p)), None)
+                if musescore_exec:
+                    xml_path = os.path.join(out_dir, f"{base}_satb.musicxml")
+                    score.write('musicxml', fp=xml_path)
+                    os.system(f'"{musescore_exec}" "{xml_path}" -o "{pdf_path}"')
+                    output_files['score'] = pdf_path
+                    print(f"PDF exported: {pdf_path}")
+                else:
+                    print("MuseScore not found. Please install MuseScore and add it to your PATH for PDF export.")
+                    print("Or open the MusicXML in MuseScore or LilyPond to make a PDF.")
+            except Exception as e:
+                print(f"PDF export failed: {e}")
+        if export_audio:
+            print("To turn MIDI into audio, try:")
+            print("  fluidsynth -F output.wav soundfont.sf2 input.mid")
+            print("  Or use GarageBand, Logic, Ableton, etc.")
+            print(f"MIDI files are in: {out_dir}")
+        if play_midi:
+            play_midi_file(midi_path)
+        print(f"Done! Results in {out_dir}\n")
+        all_outputs[mp3_file_path] = output_files
+    return all_outputs
 
 def convert_mp3_to_wav(mp3_path, wav_path=None):
-    """
-    Convert an MP3 file to WAV format for easier processing.
-    
-    Args:
-        mp3_path (str): Path to MP3 file
-        wav_path (str): Path for output WAV file (optional)
-        
-    Returns:
-        str: Path to the WAV file
-    """
     if not os.path.exists(mp3_path):
-        raise FileNotFoundError(f"MP3 file not found: {mp3_path}")
-    
-    if wav_path is None:
-        base_name = os.path.splitext(mp3_path)[0]
-        wav_path = f"{base_name}.wav"
-    
-    # Load MP3 and save as WAV
+        print(f"File not found: {mp3_path}")
+        return None
+    wav_path = wav_path or f"{os.path.splitext(mp3_path)[0]}.wav"
     y, sr = librosa.load(mp3_path, sr=None)
     sf.write(wav_path, y, sr)
-    
     return wav_path
 
 if __name__ == "__main__":
-    import sys
     import argparse
-    
-    parser = argparse.ArgumentParser(description='Generate SATB parts from audio file')
-    parser.add_argument('input_file', help='Path to the audio file')
-    parser.add_argument('--format', choices=['musicxml', 'midi', 'pdf'], default='musicxml', 
-                        help='Output format (default: musicxml)')
-    parser.add_argument('--output-dir', help='Output directory')
-    parser.add_argument('--no-audio', action='store_true', help='Do not export audio files')
-    
-    if len(sys.argv) > 1:
-        args = parser.parse_args()
-        try:
-            output_files = generate_satb_parts(
-                args.input_file, 
-                output_dir=args.output_dir, 
-                output_format=args.format,
-                export_audio=not args.no_audio
-            )
-            print("Generated files:")
-            for part, path in output_files.items():
-                print(f"- {part}: {path}")
-        except Exception as e:
-            print(f"Error: {e}")
-    else:
-        parser.print_help()
+    parser = argparse.ArgumentParser(description='Generate SATB parts from audio file(s)')
+    parser.add_argument('input_files', nargs='+', help='Path(s) to the audio file(s)')
+    parser.add_argument('--format', choices=['musicxml', 'midi', 'pdf'], default='musicxml', help='Output format')
+    parser.add_argument('--output-dir', help='Where to put results')
+    parser.add_argument('--no-audio', action='store_true', help='Skip audio export')
+    parser.add_argument('--solfege', choices=['fixed', 'movable'], default='fixed', help='Solfege system')
+    parser.add_argument('--play-midi', action='store_true', help='Play the MIDI file (needs pygame)')
+    args = parser.parse_args()
+    output_files = generate_satb_parts(
+        args.input_files, 
+        output_dir=args.output_dir, 
+        output_format=args.format,
+        export_audio=not args.no_audio,
+        solfege_system=args.solfege,
+        play_midi=args.play_midi
+    )
+    print("All done!")
+    for file, outputs in output_files.items():
+        print(f"{file}:")
+        for part, path in outputs.items():
+            print(f"  - {part}: {path}")

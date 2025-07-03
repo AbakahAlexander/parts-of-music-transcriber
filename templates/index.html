@@ -3,145 +3,327 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Music Transcriber & SATB Parts Converter</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap">
+    <title>SATB Music Matcher & Transcriber</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Roboto:wght@400;500&display=swap">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <!-- Include Verovio toolkit for music notation rendering -->
-    <script src="https://www.verovio.org/javascript/latest/verovio-toolkit.js"></script>
+    <style>
+        body {
+            font-family: 'Montserrat', 'Roboto', Arial, sans-serif;
+            background: linear-gradient(135deg, #e0e7ff 0%, #fdf6e3 100%);
+            margin: 0;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 540px;
+            margin: 48px auto 0 auto;
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 8px 32px #b0c4de55;
+            padding: 40px 36px 36px 36px;
+            position: relative;
+        }
+        h1 {
+            text-align: center;
+            color: #3a7bd5;
+            margin-bottom: 24px;
+            font-family: 'Montserrat', Arial, sans-serif;
+            font-size: 2.1em;
+            letter-spacing: 1px;
+        }
+        label {
+            display: block;
+            margin-top: 22px;
+            font-weight: 600;
+            color: #2a3d66;
+            letter-spacing: 0.5px;
+        }
+        select, input[type="file"] {
+            width: 100%;
+            margin-top: 8px;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #cfd8dc;
+            background: #f7faff;
+            font-size: 1em;
+        }
+        button {
+            margin-top: 28px;
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(90deg, #3a7bd5 60%, #6ee7b7 100%);
+            color: #fff;
+            border: none;
+            border-radius: 7px;
+            font-size: 1.15em;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 2px 8px #b0c4de33;
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            background: linear-gradient(90deg, #2851a3 60%, #3a7bd5 100%);
+            box-shadow: 0 4px 16px #3a7bd555;
+        }
+        .recorder-controls {
+            margin-top: 28px;
+            text-align: center;
+        }
+        .recorder-controls button {
+            width: auto;
+            margin: 0 12px;
+            padding: 12px 28px;
+            font-size: 1.1em;
+            border-radius: 50px;
+            background: linear-gradient(90deg, #f59e42 60%, #fbbf24 100%);
+            color: #fff;
+            font-weight: 700;
+            border: none;
+            box-shadow: 0 2px 8px #fbbf2433;
+        }
+        .recorder-controls button#stop-btn {
+            background: linear-gradient(90deg, #ef4444 60%, #f87171 100%);
+        }
+        .recorder-controls button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .recorder-status {
+            margin-top: 14px;
+            text-align: center;
+            color: #3a7bd5;
+            font-weight: 600;
+            font-size: 1.08em;
+        }
+        .results, .match-section {
+            margin-top: 36px;
+        }
+        .download-link {
+            display: block;
+            margin: 10px 0;
+            color: #3a7bd5;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.08em;
+            letter-spacing: 0.5px;
+            transition: color 0.2s;
+        }
+        .download-link:hover {
+            color: #2851a3;
+            text-decoration: underline;
+        }
+        .pdf-link {
+            color: #f59e42;
+            font-weight: 700;
+            font-size: 1.13em;
+        }
+        .error {
+            color: #ef4444;
+            margin-top: 18px;
+            font-weight: 600;
+            text-align: center;
+        }
+        .success {
+            color: #059669;
+            margin-top: 18px;
+            font-weight: 600;
+            text-align: center;
+        }
+        .matched-song {
+            background: linear-gradient(90deg, #e0f2fe 60%, #f0fdf4 100%);
+            border-left: 5px solid #3a7bd5;
+            padding: 14px 18px;
+            border-radius: 7px;
+            margin-top: 20px;
+            font-size: 1.13em;
+            font-weight: 600;
+            color: #2851a3;
+        }
+        .hidden { display: none; }
+        @media (max-width: 600px) {
+            .container { padding: 18px 4vw 18px 4vw; }
+            h1 { font-size: 1.3em; }
+        }
+    </style>
 </head>
 <body>
-    <header>
-        <div class="container">
-            <h1>Music Transcriber & SATB Parts Converter</h1>
-        </div>
-    </header>
-
-    <main>
-        <div class="container">
-            <!-- Mode Selection Tabs -->
-            <div class="mode-tabs">
-                <button class="mode-tab active" data-mode="upload">Upload MP3</button>
-                <button class="mode-tab" data-mode="record">Record Audio</button>
+    <div class="container">
+        <h1>SATB Music Matcher & Transcriber</h1>
+        <div id="step1">
+            <div class="recorder-controls">
+                <button id="record-btn">🎤 Record</button>
+                <button id="stop-btn" disabled>■ Stop</button>
             </div>
-
-            <!-- Upload Mode -->
-            <div class="mode-content upload-mode" id="upload-mode">
-                <div class="upload-section">
-                    <h2>Upload MP3 File</h2>
-                    <p>Convert your music recording into separate SATB voice parts that you can play and download.</p>
-                    
-                    <form id="upload-form">
-                        <div class="file-upload">
-                            <input type="file" id="music-file" name="file" accept="audio/mp3">
-                            <label for="music-file">
-                                <span class="icon">📁</span> Choose MP3 file
-                            </label>
-                        </div>
-                        
-                        <button type="submit" id="upload-btn">
-                            <span class="icon">🎵</span> Generate SATB Parts
-                        </button>
-                    </form>
-                    
-                    <div id="progress-container" class="hidden">
-                        <div id="progress-bar"></div>
-                        <p id="progress-status">Processing your audio file...</p>
-                    </div>
-                </div>
-
-                <div class="results-section hidden" id="results-section">
-                    <h2>SATB Parts</h2>
-                    <p>Select a voice part below to view and play:</p>
-                    
-                    <div class="tab-container">
-                        <div class="tabs">
-                            <button class="tab-button active" data-part="score">Full Score</button>
-                            <button class="tab-button" data-part="soprano">Soprano</button>
-                            <button class="tab-button" data-part="alto">Alto</button>
-                            <button class="tab-button" data-part="tenor">Tenor</button>
-                            <button class="tab-button" data-part="bass">Bass</button>
-                        </div>
-                        
-                        <div class="tab-content">
-                            <div class="notation-container" id="notation-view">
-                                <div class="loading"></div>
-                                <p>Loading music notation...</p>
-                            </div>
-                            
-                            <div class="controls">
-                                <button id="play-btn" class="control-btn">
-                                    <span class="icon">▶</span> Play
-                                </button>
-                                <button id="stop-btn" class="control-btn">
-                                    <span class="icon">■</span> Stop
-                                </button>
-                                <button id="download-btn" class="control-btn">
-                                    <span class="icon">↓</span> Download MP3
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Record Mode -->
-            <div class="mode-content record-mode hidden" id="record-mode">
-                <div class="record-section">
-                    <h2>Record Audio</h2>
-                    <p>Record music and find matching songs on Spotify.</p>
-                    
-                    <div class="record-controls">
-                        <div class="duration-control">
-                            <label for="record-duration">Recording Duration (seconds):</label>
-                            <input type="number" id="record-duration" value="5" min="1" max="30" step="1">
-                        </div>
-                        
-                        <button id="start-record-btn" class="record-btn">
-                            <span class="icon">🎙️</span> Start Recording
-                        </button>
-                    </div>
-                    
-                    <div id="recording-progress" class="hidden">
-                        <div id="recording-indicator"></div>
-                        <p id="recording-status">Recording in progress...</p>
-                        <p id="recording-timer">0</p>
-                    </div>
-                </div>
-
-                <div class="spotify-results hidden" id="spotify-results">
-                    <h2>Spotify Track Results</h2>
-                    <p>Based on your recording, we found these tracks:</p>
-                    
-                    <div class="transcription-box">
-                        <h3>Transcription</h3>
-                        <p id="transcription-text"></p>
-                    </div>
-                    
-                    <div class="track-results">
-                        <table class="tracks-table">
-                            <thead>
-                                <tr>
-                                    <th>Song</th>
-                                    <th>Artists</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tracks-tbody">
-                                <!-- Results will be populated here -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+            <div class="recorder-status" id="recorder-status"></div>
         </div>
-    </main>
-
-    <footer>
-        <div class="container">
-            <p>Music Transcriber & SATB Parts Converter &copy; 2023 | Process, play and download SATB music parts from MP3 recordings</p>
+        <div id="step2" class="hidden">
+            <div class="match-section">
+                <strong>Matched Song:</strong>
+                <div class="matched-song" id="matched-song"></div>
+            </div>
+            <form id="generate-form">
+                <label for="format">Output format:</label>
+                <select id="format" name="format">
+                    <option value="musicxml">MusicXML</option>
+                    <option value="midi">MIDI</option>
+                    <option value="pdf">PDF</option>
+                </select>
+                <label for="solfege">Solfège system:</label>
+                <select id="solfege" name="solfege">
+                    <option value="fixed">Fixed Do</option>
+                    <option value="movable">Movable Do</option>
+                </select>
+                <input type="hidden" id="matched-file" name="matched-file">
+                <button type="submit">Generate SATB & Download</button>
+            </form>
         </div>
-    </footer>
+        <div id="results" class="results hidden"></div>
+        <div id="error-message" class="error"></div>
+    </div>
+    <script>
+    // --- Audio Recording ---
+    let mediaRecorder, audioChunks = [], recordedBlob = null, matchedFilename = null;
+    const recordBtn = document.getElementById('record-btn');
+    const stopBtn = document.getElementById('stop-btn');
+    const recorderStatus = document.getElementById('recorder-status');
+    const step2 = document.getElementById('step2');
+    const matchedSongDiv = document.getElementById('matched-song');
+    const matchedFileInput = document.getElementById('matched-file');
+    const errorDiv = document.getElementById('error-message');
+    const resultsDiv = document.getElementById('results');
 
-    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    recordBtn.onclick = async function() {
+        errorDiv.textContent = '';
+        resultsDiv.classList.add('hidden');
+        matchedSongDiv.textContent = '';
+        step2.classList.add('hidden');
+        recorderStatus.textContent = 'Recording...';
+        recordBtn.disabled = true;
+        stopBtn.disabled = false;
+        audioChunks = [];
+        if (!navigator.mediaDevices) {
+            errorDiv.textContent = 'Audio recording not supported.';
+            return;
+        }
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+        mediaRecorder.onstop = () => {
+            recordedBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            recorderStatus.textContent = 'Processing...';
+            // Send to backend for matching
+            const formData = new FormData();
+            formData.append('audio', recordedBlob, 'recording.webm');
+            fetch('/api/match', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    errorDiv.textContent = data.error;
+                    recorderStatus.textContent = '';
+                    return;
+                }
+                if (!data.match) {
+                    errorDiv.textContent = 'No match found in database!';
+                    recorderStatus.textContent = '';
+                    return;
+                }
+                // Helper to render Spotify info
+                function renderSpotifyInfo(data) {
+                    if (!data.spotify) return '';
+                    let html = '<div class="spotify-info" style="margin-top:12px;display:flex;align-items:center;gap:16px;">';
+                    if (data.spotify.album_art) {
+                        html += `<img src="${data.spotify.album_art}" alt="Album Art" style="width:64px;height:64px;border-radius:8px;box-shadow:0 2px 8px #b0c4de33;">`;
+                    }
+                    html += '<div>';
+                    if (data.spotify.title) {
+                        html += `<div style="font-weight:700;font-size:1.1em;">${data.spotify.title}</div>`;
+                    }
+                    if (data.spotify.artist) {
+                        html += `<div style="color:#3a7bd5;font-weight:600;">${data.spotify.artist}</div>`;
+                    }
+                    if (data.spotify.spotify_url) {
+                        html += `<a href="${data.spotify.spotify_url}" target="_blank" style="color:#1db954;font-weight:600;text-decoration:none;">Listen on Spotify</a>`;
+                    }
+                    if (data.spotify.preview_url) {
+                        html += `<div style="margin-top:6px;"><audio controls src="${data.spotify.preview_url}" style="width:180px;"></audio></div>`;
+                    }
+                    html += '</div></div>';
+                    return html;
+                }
+                let matchHtml = data.match;
+                matchHtml += renderSpotifyInfo(data);
+                matchedSongDiv.innerHTML = matchHtml;
+                matchedFileInput.value = data.filename;
+                matchedFilename = data.filename;
+                step2.classList.remove('hidden');
+                recorderStatus.textContent = 'Match found!';
+            })
+            .catch(() => {
+                errorDiv.textContent = 'Error matching audio.';
+                recorderStatus.textContent = '';
+            });
+        };
+        mediaRecorder.start();
+    };
+    stopBtn.onclick = function() {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+            recordBtn.disabled = false;
+            stopBtn.disabled = true;
+            recorderStatus.textContent = 'Stopped.';
+        }
+    };
+
+    // --- SATB Generation ---
+    document.getElementById('generate-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        errorDiv.textContent = '';
+        resultsDiv.innerHTML = '';
+        resultsDiv.classList.add('hidden');
+        const format = document.getElementById('format').value;
+        const solfege = document.getElementById('solfege').value;
+        if (!matchedFilename) {
+            errorDiv.textContent = 'No matched file.';
+            return;
+        }
+        const formData = new FormData();
+        formData.append('filename', matchedFilename);
+        formData.append('format', format);
+        formData.append('solfege', solfege);
+        fetch('/api/generate', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                errorDiv.textContent = data.error;
+                return;
+            }
+            let html = '';
+            if (data.pdf_link) {
+                html += `<a class="pdf-link" href="/results/${data.pdf_link}" download>Download PDF Score</a>`;
+            }
+            if (data.download_links && data.download_links.length) {
+                html += '<ul>';
+                data.download_links.forEach(link => {
+                    html += `<li><a class="download-link" href="${link.url}" download>${link.part.replace('_',' ').toUpperCase()}</a></li>`;
+                });
+                html += '</ul>';
+            }
+            if (html) {
+                resultsDiv.innerHTML = html;
+                resultsDiv.classList.remove('hidden');
+            } else {
+                errorDiv.textContent = 'No results generated.';
+            }
+        })
+        .catch(() => {
+            errorDiv.textContent = 'Error generating SATB.';
+        });
+    });
+    </script>
 </body>
 </html>
